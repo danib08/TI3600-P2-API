@@ -88,7 +88,23 @@ namespace API.Controllers
             return Ok(compras);
         }
 
-       
+        [HttpGet("topFiveClient")]
+        public async Task<IActionResult> GetTopFiveClient()
+        {
+            var compras = await _client.Cypher.Match("(x:Compras), (c:Clientes)")
+                                              .Where((Compras x, Clientes c) => x.idCliente == c.id)
+                                              .Return(x => new
+                                              {
+                                                  idCliente = Return.As<string>("x.idCliente"),
+                                                  nombreCliente = Return.As<string>("c.first_name"),
+                                                  cantidad = Return.As<int>("SUM(x.cantidad)")
+                                              })
+                                              .OrderByDescending("cantidad")
+                                              .Limit(5).ResultsAsync;
+
+
+            return Ok(compras);
+        }
 
     }
 }
