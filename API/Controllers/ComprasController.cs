@@ -77,7 +77,7 @@ namespace API.Controllers
                                               .Where((Compras x, Productos p) => x.idProducto == p.id)
                                               .Return(x => new
                                               {
-                                                  
+                                                  idProducto = Return.As<int>("p.id"),
                                                   nombreProducto = Return.As<string>("p.nombre"),
                                                   cantidad = Return.As<int>("SUM(x.cantidad)")
                                               })
@@ -91,12 +91,32 @@ namespace API.Controllers
         [HttpGet("topFiveClient")]
         public async Task<IActionResult> GetTopFiveClient()
         {
-            var compras = await _client.Cypher.Match("(x:Compras), (c:Clientes)")
+            var clientes = await _client.Cypher.Match("(x:Compras), (c:Clientes)")
                                               .Where((Compras x, Clientes c) => x.idCliente == c.id)
                                               .Return(x => new
                                               {
                                                   idCliente = Return.As<string>("x.idCliente"),
                                                   nombreCliente = Return.As<string>("c.first_name"),
+                                                  cantidad = Return.As<int>("SUM(x.cantidad)")
+                                              })
+                                              .OrderByDescending("cantidad")
+                                              .Limit(5).ResultsAsync;
+
+
+            return Ok(clientes);
+        }
+
+        [HttpGet("topFiveMarcas")]
+        public async Task<IActionResult> GetTopFiveMarcas()
+        {
+            var compras = await _client.Cypher.Match("(x:Compras), (p:Productos), (m:Marcas)")
+                                              .Where((Compras x, Productos p, Marcas m) => x.idProducto == p.id )
+                                              .Return(x => new
+                                              {
+
+                                                  nombreProducto = Return.As<string>("p.nombre"),
+                                                  nombreMarca = Return.As<string>("m.nombre"),
+                                                  paisMarca = Return.As<string>("m.pais"),
                                                   cantidad = Return.As<int>("SUM(x.cantidad)")
                                               })
                                               .OrderByDescending("cantidad")
