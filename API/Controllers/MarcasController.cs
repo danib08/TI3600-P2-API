@@ -1,6 +1,8 @@
 ﻿using BDAProy2.Models;
 using Microsoft.AspNetCore.Mvc;
 using Neo4jClient;
+using Neo4jClient.Cypher;
+
 
 namespace BDAProy2.Controllers
 {
@@ -65,6 +67,25 @@ namespace BDAProy2.Controllers
                                 .ExecuteWithoutResultsAsync();
 
             return Ok();
+        }
+
+        [HttpGet("topFiveMarcas")]
+        public async Task<IActionResult> GetTopFiveMarcas()
+        {
+            var compras = await _client.Cypher.Match("(m:Marcas)<-[:esMarca]-(p:Productos)-[:prodCompra]->(c:Compras)")
+
+                                              .Return(x => new
+                                              {
+
+                                                  nombreMarca = Return.As<string>("m.nombre"),
+                                                  paisMarca = Return.As<string>("m.pais"),
+                                                  cantidad = Return.As<int>("SUM(c.cantidad)")
+                                              })
+                                              .OrderByDescending("cantidad")
+                                              .Limit(5).ResultsAsync;
+
+
+            return Ok(compras);
         }
 
     }
