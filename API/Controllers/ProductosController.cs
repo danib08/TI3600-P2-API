@@ -1,11 +1,8 @@
 ﻿using BDAProy2.Models;
-using Microsoft.AspNetCore.Http;
 using Microsoft.AspNetCore.Mvc;
 using Neo4jClient;
-using System;
-using System.Collections.Generic;
-using System.Linq;
-using System.Threading.Tasks;
+using Neo4jClient.Cypher;
+
 
 namespace BDAProy2.Controllers
 {
@@ -72,5 +69,37 @@ namespace BDAProy2.Controllers
             return Ok();
         }
 
+        [HttpGet("prodsPorCliente/{nombre}/{apellido}")]
+        public async Task<IActionResult> GetProdsByClient(string nombre, string apellido)
+        {
+            var clientes = await _client.Cypher.Match("(c:Clientes), (p:Productos), (x:Compras)")
+                                               .Where((Clientes c, Productos p, Compras x) => 
+                                               (c.first_name == nombre & c.last_name == apellido &
+                                               c.id == x.idCliente & p.id == x.idProducto))
+                                               .Return(x => new
+                                              {
+                                                nombreProducto = Return.As<string>("p.nombre"),
+                                                marcaProducto = Return.As<string>("p.marca"),
+                                                cantidadProducto = Return.As<int>("x.cantidad"),
+                                              })
+                                              .ResultsAsync;
+            return Ok(clientes);
+        }
+
+        [HttpGet("clienteProductoComun/{nombreProducto}")]
+        public async Task<IActionResult> ClientCommonProd(string nombreProducto)
+        {
+            var clientes = await _client.Cypher.Match("(c:Clientes), (p:Productos), (x:Compras)")
+                                               .Where((Clientes c, Productos p, Compras x) => 
+                                               (p.id == x.idProducto & c.id == x.idCliente &
+                                               nombreProducto == p.nombre))
+                                               .Return(x => new
+                                              {
+                                                nombreCliente = Return.As<string>("c.first_name"),
+                                                apellidoCliente = Return.As<string>("c.last_name")
+                                              })
+                                              .ResultsAsync;
+            return Ok(clientes);
+        }
     }
 }

@@ -1,5 +1,4 @@
 ﻿using BDAProy2.Models;
-using Microsoft.AspNetCore.Http;
 using Microsoft.AspNetCore.Mvc;
 using Neo4jClient;
 using Neo4jClient.Cypher;
@@ -70,8 +69,8 @@ namespace API.Controllers
         }
 
 
-        [HttpGet("topFiveProd")]
-        public async Task<IActionResult> GetTopFiveProd()
+        [HttpGet("topFiveProds")]
+        public async Task<IActionResult> GetTopFiveProds()
         {
             var compras = await _client.Cypher.Match("(x:Compras), (p:Productos)")
                                               .Where((Compras x, Productos p) => x.idProducto == p.id)
@@ -88,8 +87,8 @@ namespace API.Controllers
             return Ok(compras);
         }
 
-        [HttpGet("topFiveClient")]
-        public async Task<IActionResult> GetTopFiveClient()
+        [HttpGet("topFiveClientes")]
+        public async Task<IActionResult> GetTopFiveClientes()
         {
             var clientes = await _client.Cypher.Match("(x:Compras), (c:Clientes)")
                                               .Where((Compras x, Clientes c) => x.idCliente == c.id)
@@ -109,22 +108,42 @@ namespace API.Controllers
         [HttpGet("topFiveMarcas")]
         public async Task<IActionResult> GetTopFiveMarcas()
         {
-            var compras = await _client.Cypher.Match("(x:Compras), (p:Productos), (m:Marcas)")
-                                              .Where((Compras x, Productos p, Marcas m) => x.idProducto == p.id )
+            var compras = await _client.Cypher.Match("(c:Compras), (p:Productos), (m:Marcas)")
+                                              .Where((Compras c, Productos p, Marcas m) => c.idProducto == p.id)
                                               .Return(x => new
                                               {
 
                                                   nombreProducto = Return.As<string>("p.nombre"),
                                                   nombreMarca = Return.As<string>("m.nombre"),
                                                   paisMarca = Return.As<string>("m.pais"),
-                                                  cantidad = Return.As<int>("SUM(x.cantidad)")
+                                                  cantidad = Return.As<int>("SUM(c.cantidad)")
                                               })
                                               .OrderByDescending("cantidad")
                                               .Limit(5).ResultsAsync;
 
 
             return Ok(compras);
-        }
+        } 
 
+        [HttpPost("registrarCompras")]
+        public async Task<IActionResult> Create([FromBody] RegistroCompra registro)
+        {
+            int clientId = registro.idCliente;
+
+            foreach (Productos prod in registro.listaProductos)
+            {
+                var exists = await _client.Cypher.Match("(x:Compras)")
+                                              .Where((Compras x) => (x.idCliente == clientId && x.idProducto == prod.id))
+                                              .Return(x => new
+                                              {
+
+                                                  idProducto = Return.As<int>("x.idProducto"),
+                                                  idCliente = Return.As<int>("x.idCliente"),
+                                                  cantidad = Return.As<int>("x.cantidad")
+                                              })
+                                              .ResultsAsync;
+            }
+            return Ok();
+        }
     }
 }

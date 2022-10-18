@@ -1,11 +1,7 @@
 ﻿using BDAProy2.Models;
-using Microsoft.AspNetCore.Http;
 using Microsoft.AspNetCore.Mvc;
 using Neo4jClient;
-using System;
-using System.Collections.Generic;
-using System.Linq;
-using System.Threading.Tasks;
+using Neo4jClient.Cypher;
 
 namespace BDAProy2.Controllers
 {
@@ -72,5 +68,21 @@ namespace BDAProy2.Controllers
             return Ok();
         }
 
+        [HttpGet("clienteCompraComun/{nombreCliente}/{apellidoCliente}")]
+        public async Task<IActionResult> ClientCommonProd(string nombreCliente, string apellidoCliente)
+        {
+            var clientes = await _client.Cypher.Match("(c:Clientes), (p:Productos), (x:Compras)")
+                                               .Where((Clientes c, Productos p, Compras x) => 
+                                               (nombreCliente == c.first_name & 
+                                                apellidoCliente == c.last_name &
+                                                c.id == x.idCliente))
+                                               .Return(x => new
+                                              {
+                                                nombreCliente = Return.As<string>("c.first_name"),
+                                                apellidoCliente = Return.As<string>("c.last_name")
+                                              })
+                                              .ResultsAsync;
+            return Ok(clientes);
+        }
     }
 }
