@@ -105,25 +105,7 @@ namespace API.Controllers
             return Ok(clientes);
         }
 
-        [HttpGet("topFiveMarcas")]
-        public async Task<IActionResult> GetTopFiveMarcas()
-        {
-            var compras = await _client.Cypher.Match("(c:Compras), (p:Productos), (m:Marcas)")
-                                              .Where((Compras c, Productos p, Marcas m) => c.idProducto == p.id)
-                                              .Return(x => new
-                                              {
-
-                                                  nombreProducto = Return.As<string>("p.nombre"),
-                                                  nombreMarca = Return.As<string>("m.nombre"),
-                                                  paisMarca = Return.As<string>("m.pais"),
-                                                  cantidad = Return.As<int>("SUM(c.cantidad)")
-                                              })
-                                              .OrderByDescending("cantidad")
-                                              .Limit(5).ResultsAsync;
-
-
-            return Ok(compras);
-        } 
+         
 
         [HttpPost("registrarCompras")]
         public async Task<IActionResult> Create([FromBody] RegistroCompra registro)
