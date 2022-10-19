@@ -69,20 +69,50 @@ namespace BDAProy2.Controllers
         }
 
         [HttpGet("clienteCompraComun/{nombreCliente}/{apellidoCliente}")]
-        public async Task<IActionResult> ClientCommonProd(string nombreCliente, string apellidoCliente)
+        public async Task<IActionResult> ClientCommonBuy(string nombreCliente, string apellidoCliente)
         {
-            var clientes = await _client.Cypher.Match("(c:Clientes), (p:Productos), (x:Compras)")
-                                               .Where((Clientes c, Productos p, Compras x) => 
-                                               (nombreCliente == c.first_name & 
-                                                apellidoCliente == c.last_name &
-                                                c.id == x.idCliente))
+            var clientes = await _client.Cypher.Match("(c:Clientes)-[:clienteCompra]->(x:Compras)<-[:prodCompra]-(p:Productos)-[:prodCompra]->(co:Compras)<-[:clienteCompra]-(a:Clientes)")
+                                               .With("Count(a.id) as prodQuant, a as ci, c as cl")
+                                               .Where("cl.first_name=\"" + nombreCliente + 
+                                               "\" and cl.last_name=\"" + apellidoCliente + 
+                                               "\" and prodQuant > 1")
                                                .Return(x => new
                                               {
-                                                nombreCliente = Return.As<string>("c.first_name"),
-                                                apellidoCliente = Return.As<string>("c.last_name")
+                                                nombreCliente = Return.As<string>("ci.first_name"),
+                                                apellidoCliente = Return.As<string>("ci.last_name")
                                               })
                                               .ResultsAsync;
-            return Ok(clientes);
+
+            //List<ComprasComun> lista = new List<ComprasComun>();
+            //List<string> list1 = new List<string>();
+            //var nombre = clientes.ElementAt(0).nombreCliente;
+
+            //foreach (var item in clientes)
+            //{
+                var productos = await _client.Cypher.Match("(c:Clientes)-[:clienteCompra]->(x:Compras)<-[:prodCompra]-(p:Productos)-[:prodCompra]->(co:Compras)<-[:clienteCompra]-(a:Clientes)")
+                                               .Where("c.first_name=\"" + nombreCliente + 
+                                               "\" and c.last_name=\"" + apellidoCliente + 
+                                               "\" and a.first_name=\"" + clientes.ElementAt(0).nombreCliente + 
+                                               "\" and a.last_name=\"" + clientes.ElementAt(0).apellidoCliente + "\"")
+                                               .Return(x => new
+                                              {
+                                                nombreProducto = Return.As<string>("p.nombre")                                               
+                                              })
+                                              .ResultsAsync;  
+
+                /*ComprasComun comprasComun = new ComprasComun();
+                comprasComun.nombreCliente = item.nombreCliente;
+                comprasComun.apellidoCliente = item.apellidoCliente;
+                foreach (var prod in productos)
+                {
+                    comprasComun.listaProductos.Append(prod.nombreProducto);
+                }
+                lista.Append(comprasComun);
+
+                list1.Add(productos.ElementAt(0).nombreProducto);*/
+            //}
+
+            return Ok(productos);
         }
     }
 }
