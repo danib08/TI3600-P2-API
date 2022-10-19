@@ -83,36 +83,37 @@ namespace BDAProy2.Controllers
                                               })
                                               .ResultsAsync;
 
-            //List<ComprasComun> lista = new List<ComprasComun>();
+            List<ComprasComun> lista = new List<ComprasComun>();
+
             //List<string> list1 = new List<string>();
             //var nombre = clientes.ElementAt(0).nombreCliente;
 
-            //foreach (var item in clientes)
-            //{
+            foreach (var item in clientes)
+            {
                 var productos = await _client.Cypher.Match("(c:Clientes)-[:clienteCompra]->(x:Compras)<-[:prodCompra]-(p:Productos)-[:prodCompra]->(co:Compras)<-[:clienteCompra]-(a:Clientes)")
                                                .Where("c.first_name=\"" + nombreCliente + 
                                                "\" and c.last_name=\"" + apellidoCliente + 
-                                               "\" and a.first_name=\"" + clientes.ElementAt(0).nombreCliente + 
-                                               "\" and a.last_name=\"" + clientes.ElementAt(0).apellidoCliente + "\"")
+                                               "\" and a.first_name=\"" + item.nombreCliente + 
+                                               "\" and a.last_name=\"" + item.apellidoCliente + "\"")
                                                .Return(x => new
                                               {
                                                 nombreProducto = Return.As<string>("p.nombre")                                               
                                               })
-                                              .ResultsAsync;  
+                                              .ResultsAsync;
 
-                /*ComprasComun comprasComun = new ComprasComun();
+                ComprasComun comprasComun = new ComprasComun();
                 comprasComun.nombreCliente = item.nombreCliente;
                 comprasComun.apellidoCliente = item.apellidoCliente;
                 foreach (var prod in productos)
                 {
-                    comprasComun.listaProductos.Append(prod.nombreProducto);
+                    comprasComun.listaProductos.Add(prod.nombreProducto);
                 }
                 lista.Append(comprasComun);
 
-                list1.Add(productos.ElementAt(0).nombreProducto);*/
-            //}
+                //list1.Add(productos.ElementAt(0).nombreProducto);
+            }
 
-            return Ok(productos);
+            return Ok(lista);
         }
     }
 }

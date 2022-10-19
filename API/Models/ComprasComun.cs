@@ -4,6 +4,8 @@ namespace BDAProy2.Models
     {
         public string? nombreCliente { get; set; }
         public string? apellidoCliente { get; set; }
-        public string[]? listaProductos { get; set; }
+        public List<string> listaProductos = new List<string>();
     }
+
+
 }
