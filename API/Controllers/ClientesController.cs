@@ -2,6 +2,11 @@
 using Microsoft.AspNetCore.Mvc;
 using Neo4jClient;
 using Neo4jClient.Cypher;
+using Newtonsoft.Json;
+using System.Collections.Generic;
+using System.Text.Json;
+using System.Text.Json.Serialization;
+using JsonSerializer = Newtonsoft.Json.JsonSerializer;
 
 namespace BDAProy2.Controllers
 {
@@ -69,7 +74,7 @@ namespace BDAProy2.Controllers
         }
 
         [HttpGet("clienteCompraComun/{nombreCliente}/{apellidoCliente}")]
-        public async Task<IActionResult> ClientCommonBuy(string nombreCliente, string apellidoCliente)
+        public  async Task<IActionResult> ClientCommonBuy(string nombreCliente, string apellidoCliente)
         {
             var clientes = await _client.Cypher.Match("(c:Clientes)-[:clienteCompra]->(x:Compras)<-[:prodCompra]-(p:Productos)-[:prodCompra]->(co:Compras)<-[:clienteCompra]-(a:Clientes)")
                                                .With("Count(a.id) as prodQuant, a as ci, c as cl")
@@ -85,12 +90,9 @@ namespace BDAProy2.Controllers
 
             List<ComprasComun> lista = new List<ComprasComun>();
 
-            //List<string> list1 = new List<string>();
-            //var nombre = clientes.ElementAt(0).nombreCliente;
-
             foreach (var item in clientes)
             {
-                var productos = await _client.Cypher.Match("(c:Clientes)-[:clienteCompra]->(x:Compras)<-[:prodCompra]-(p:Productos)-[:prodCompra]->(co:Compras)<-[:clienteCompra]-(a:Clientes)")
+                var productos =  await _client.Cypher.Match("(c:Clientes)-[:clienteCompra]->(x:Compras)<-[:prodCompra]-(p:Productos)-[:prodCompra]->(co:Compras)<-[:clienteCompra]-(a:Clientes)")
                                                .Where("c.first_name=\"" + nombreCliente + 
                                                "\" and c.last_name=\"" + apellidoCliente + 
                                                "\" and a.first_name=\"" + item.nombreCliente + 
@@ -108,12 +110,13 @@ namespace BDAProy2.Controllers
                 {
                     comprasComun.listaProductos.Add(prod.nombreProducto);
                 }
-                lista.Append(comprasComun);
+                lista.Add(comprasComun);
 
-                //list1.Add(productos.ElementAt(0).nombreProducto);
             }
 
-            return Ok(lista);
+            var json = JsonConvert.SerializeObject(lista);
+
+            return Ok(json);
         }
     }
 }
