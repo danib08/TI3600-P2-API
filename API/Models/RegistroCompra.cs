@@ -2,7 +2,7 @@
 {
     public class RegistroCompra
     {
-        public int idCliente { get; set; }
-        public Productos[]? listaProductos { get; set; }
+        public int idProducto { get; set; }
+        public int cantidad { get; set; }
     }
 }

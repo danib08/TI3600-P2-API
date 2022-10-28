@@ -27,10 +27,10 @@ namespace API.Controllers
         }
 
         [HttpGet("{idCliente}/{idProducto}")]
-        public async Task<IActionResult> GetById(int idCliente, int idProd)
+        public async Task<IActionResult> GetById(int idCliente, int idProducto)
         {
             var compras = await _client.Cypher.Match("(x:Compras)")
-                                               .Where((Compras x) => x.idCliente == idCliente & x.idProducto == idProd)
+                                               .Where((Compras x) => x.idCliente == idCliente & x.idProducto == idProducto)
                                                .Return(x => x.As<Compras>()).ResultsAsync;
             return Ok(compras.LastOrDefault());
         }
@@ -58,11 +58,11 @@ namespace API.Controllers
         }
 
         [HttpDelete("{idCliente}/{idProducto}")]
-        public async Task<IActionResult> Delete(int idCliente, int idProd)
+        public async Task<IActionResult> Delete(int idCliente, int idProducto)
         {
             await _client.Cypher.Match("(x:Compras)")
-                                .Where((Compras x) => x.idCliente == idCliente & x.idProducto == idProd)
-                                .Delete("x")
+                                .Where((Compras x) => x.idCliente == idCliente & x.idProducto == idProducto)
+                                .DetachDelete("x")
                                 .ExecuteWithoutResultsAsync();
 
             return Ok();
@@ -107,21 +107,37 @@ namespace API.Controllers
 
          
 
-        [HttpPost("registrarCompras")]
-        public async Task<IActionResult> Create([FromBody] RegistroCompra registro)
+        [HttpPost("registrarCompras/{idCliente}")]
+        public async Task<IActionResult> Create([FromBody] RegistroCompra[] registro, int idCliente)
         {
-            int clientId = registro.idCliente;
+            int clientId = idCliente;
 
-            foreach (Productos prod in registro.listaProductos)
+            foreach (RegistroCompra item in registro)
             {
-                var exists = await _client.Cypher.Match("(x:Compras)")
-                                              .Where((Compras x) => (x.idCliente == clientId && x.idProducto == prod.id))
+                var merge_nodes = await _client.Cypher.Merge("(c:Compras {idCliente:" + idCliente + ", idProducto:" + item.idProducto + "})")
+                                              .OnCreate()
+                                              .Set("c.cantidad=" + item.cantidad)
+                                              .OnMatch()
+                                              .Set("c.cantidad=c.cantidad+" + item.cantidad)
                                               .Return(x => new
                                               {
+                                                  idProducto = Return.As<int>("c.idProducto")
+                                              })
+                                              .ResultsAsync;
 
-                                                  idProducto = Return.As<int>("x.idProducto"),
-                                                  idCliente = Return.As<int>("x.idCliente"),
-                                                  cantidad = Return.As<int>("x.cantidad")
+                var merge_relat = await _client.Cypher.Match("(cl:Clientes {id:" + idCliente + "}), (c:Compras {idCliente:" + idCliente + ", idProducto:" + item.idProducto + "})")
+                                             .Merge("(cl)-[r:ClienteCompra]->(c)")
+                                             .Return(x => new
+                                              {
+                                                  idProducto = Return.As<int>("c.idProducto")
+                                              })
+                                              .ResultsAsync;
+
+                var merge_relat2 = await _client.Cypher.Match("(p:Productos {id:" + item.idProducto + "}), (c:Compras {idCliente:" + idCliente + ", idProducto:" + item.idProducto + "})")
+                                             .Merge("(p)-[r:prodCompra]->(c)")
+                                             .Return(x => new
+                                              {
+                                                  idProducto = Return.As<int>("c.idProducto")
                                               })
                                               .ResultsAsync;
             }
