@@ -1,5 +1,8 @@
-﻿namespace BDAProy2.Models
+﻿namespace API.Models
 {
+    /// <summary>
+    /// Modelo para los nodos Compras
+    /// </summary>
     public class Compras
     {
         public int idCliente { get; set; }

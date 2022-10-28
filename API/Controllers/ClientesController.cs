@@ -1,15 +1,14 @@
-﻿using BDAProy2.Models;
+﻿using API.Models;
 using Microsoft.AspNetCore.Mvc;
 using Neo4jClient;
 using Neo4jClient.Cypher;
 using Newtonsoft.Json;
-using System.Collections.Generic;
-using System.Text.Json;
-using System.Text.Json.Serialization;
-using JsonSerializer = Newtonsoft.Json.JsonSerializer;
 
 namespace BDAProy2.Controllers
 {
+    /// <summary>
+    /// Controlador para el modelo Clientes
+    /// </summary>
     [Route("api/[controller]")]
     [ApiController]
     public class ClientesController : ControllerBase
@@ -21,6 +20,12 @@ namespace BDAProy2.Controllers
             _client = client;
         }
 
+        /// <summary>
+        /// GET de todos los Clientes existentes
+        /// </summary>
+        /// <returns> 
+        /// Lista de todos los Clientes
+        /// </returns>
         [HttpGet]
         public async Task<IActionResult> Get()
         {
@@ -30,6 +35,15 @@ namespace BDAProy2.Controllers
             return Ok(clientes);
         }
 
+        /// <summary>
+        /// GET de un Cliente segun su identificador
+        /// </summary>
+        /// <param name="id">
+        /// El identificador del cliente que se desea obtener
+        /// </param>
+        /// <returns>
+        /// El objeto Cliente deseado
+        /// </returns>
         [HttpGet("{id}")]
         public async Task<IActionResult> GetById(int id)
         {
