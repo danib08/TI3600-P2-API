@@ -26,7 +26,9 @@ namespace BDAProy2.Controllers
         /// <returns> 
         /// Lista de todos los Clientes
         /// </returns>
+        /// <response code="200">Retorna la lista completa de Clientes</response>
         [HttpGet]
+        [ProducesResponseType(200)]
         public async Task<IActionResult> Get()
         {
             var clientes = await _client.Cypher.Match("(x:Clientes)")
@@ -41,49 +43,102 @@ namespace BDAProy2.Controllers
         /// <param name="id">
         /// El identificador del cliente que se desea obtener
         /// </param>
-        /// <returns>
-        /// El objeto Cliente deseado
-        /// </returns>
+        /// <returns> El objeto Cliente deseado </returns>
+        /// <response code="200">Retorna el Cliente deseado</response>
+        /// <response code="404">No existe un Cliente con el identificador ingresado</response>
         [HttpGet("{id}")]
+        [ProducesResponseType(200)]
+        [ProducesResponseType(404)]
         public async Task<IActionResult> GetById(int id)
         {
             var clientes = await _client.Cypher.Match("(x:Clientes)")
                                                .Where((Clientes x) => x.id == id)
                                                .Return(x => x.As<Clientes>()).ResultsAsync;
-            return Ok(clientes.LastOrDefault());
+            if (clientes.Count() != 0) {
+                return Ok(clientes.LastOrDefault());
+            }
+            else {
+                return NotFound();
+            }
         }
 
+        /// <summary>
+        /// POST para crear un nuevo Cliente
+        /// </summary>
+        /// <param name="cliente">
+        /// Objeto Cliente a ser creado
+        /// </param>
+        /// <remarks>
+        /// Ejemplo de body:
+        /// 
+        ///     POST api/Employee
+        ///     {       
+        ///       "id": "54"         
+        ///       "first_name": "Mike",
+        ///       "last_name": "Andrew"
+        ///     }
+        /// </remarks>
+        /// <response code="200">Se crea el nuevo Cliente</response>
+        /// <response code="500">El identificador ingresado ya pertenece a
+        /// otro Cliente </response>
+        [ProducesResponseType(200)]
+        [ProducesResponseType(500)]
         [HttpPost]
-        public async Task<IActionResult> Create([FromBody]Clientes cl)
+        public async Task<IActionResult> Create([FromBody]Clientes cliente)
         {
-            await _client.Cypher.Create("(x:Clientes $cl)")
-                                .WithParam("cl", cl)
-                                .ExecuteWithoutResultsAsync();
+            var clientes = await _client.Cypher.Create("(x:Clientes $cl)")
+                                .WithParam("cl", cliente)
+                                .Return(x => x.As<Clientes>()).ResultsAsync;
 
             return Ok();
         }
 
+        /// <summary>
+        /// PUT para modificar los atributos de un Cliente
+        /// </summary>
+        /// <param name="id">
+        /// Identificador del Cliente a ser modificado
+        /// </param>
+        /// <param name="cliente">
+        /// Objeto con los nuevos atributos para el Cliente
+        /// </param>
+        /// <response code="200">Se actualiza el nuevo Cliente</response>
+        /// <response code="500">El identificador ingresado ya pertenece a
+        /// otro Cliente </response>
+        [ProducesResponseType(200)]
+        [ProducesResponseType(500)]
         [HttpPut("{id}")]
-        public async Task<IActionResult> Update(int id, [FromBody]Clientes cl)
+        public async Task<IActionResult> Update(int id, [FromBody]Clientes cliente)
         {
             await _client.Cypher.Match("(x:Clientes)")
                                 .Where((Clientes x) => x.id == id)
                                 .Set("x = $cl")
-                                .WithParam("cl", cl)
+                                .WithParam("cl", cliente)
                                 .ExecuteWithoutResultsAsync();
-
             return Ok();
         }
 
-
+        /// <summary>
+        /// DELETE para eliminar a un Cliente y todas sus relaciones
+        /// </summary>
+        /// <param name="id">
+        /// Identificador del Cliente a ser eliminado
+        /// </param>
+        /// <response code="200">Cliente eliminado satisfactoriamente</response>
+        [ProducesResponseType(200)]
         [HttpDelete("{id}")]
         public async Task<IActionResult> Delete(int id)
         {
             await _client.Cypher.Match("(x:Clientes)")
                                 .Where((Clientes x) => x.id == id)
-                                .Delete("x")
+                                .DetachDelete("x")
                                 .ExecuteWithoutResultsAsync();
-            
+
+            await _client.Cypher.Match("(x:Compras)")
+                                .Where((Compras x) => x.idCliente == id)
+                                .DetachDelete("x")
+                                .ExecuteWithoutResultsAsync();
+        
             return Ok();
         }
 
