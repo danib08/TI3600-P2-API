@@ -67,53 +67,41 @@ namespace API.Controllers
 
             return Ok();
         }
-
-
-        [HttpGet("topFiveProds")]
-        public async Task<IActionResult> GetTopFiveProds()
-        {
-            var compras = await _client.Cypher.Match("(x:Compras), (p:Productos)")
-                                              .Where((Compras x, Productos p) => x.idProducto == p.id)
-                                              .Return(x => new
-                                              {
-                                                  idProducto = Return.As<int>("p.id"),
-                                                  nombreProducto = Return.As<string>("p.nombre"),
-                                                  cantidad = Return.As<int>("SUM(x.cantidad)")
-                                              })
-                                              .OrderByDescending("cantidad")
-                                              .Limit(5).ResultsAsync;
-                                              
-
-            return Ok(compras);
-        }
-
-        [HttpGet("topFiveClientes")]
-        public async Task<IActionResult> GetTopFiveClientes()
-        {
-            var clientes = await _client.Cypher.Match("(x:Compras), (c:Clientes)")
-                                              .Where((Compras x, Clientes c) => x.idCliente == c.id)
-                                              .Return(x => new
-                                              {
-                                                  idCliente = Return.As<string>("x.idCliente"),
-                                                  nombreCliente = Return.As<string>("c.first_name"),
-                                                  cantidad = Return.As<int>("SUM(x.cantidad)")
-                                              })
-                                              .OrderByDescending("cantidad")
-                                              .Limit(5).ResultsAsync;
-
-
-            return Ok(clientes);
-        }
-
-         
-
-        [HttpPost("registrarCompras/{idCliente}")]
+ 
+        /// <summary>
+        /// POST para registrar las Compras de un Cliente
+        /// </summary>
+        /// <param name="registro">
+        /// Objeto con los productos comprados y su cantidad
+        /// </param>
+        /// <param name="idCliente">
+        /// Identificador del Cliente que realiza la compra
+        /// </param>
+        /// <remarks>
+        /// Ejemplo de body:
+        /// 
+        ///     POST api/Compras/registroDeCompras
+        ///     [
+        ///      {       
+        ///       "idProducto": 1,        
+        ///       "cantidad": 5,
+        ///      },
+        ///      {       
+        ///       "idProducto": 7,        
+        ///       "cantidad": 3,
+        ///      }
+        ///     ]
+        /// </remarks>
+        /// <returns></returns>
+        [HttpPost("registroDeCompras/{idCliente}")]
         public async Task<IActionResult> Create([FromBody] RegistroCompra[] registro, int idCliente)
         {
             int clientId = idCliente;
 
             foreach (RegistroCompra item in registro)
             {
+                // Crea nuevo nodo Compra si el cliente nunca antes habia comprado dicho Producto,
+                // de lo contrario, actualiza la "cantidad" del nodo existente
                 var merge_nodes = await _client.Cypher.Merge("(c:Compras {idCliente:" + idCliente + ", idProducto:" + item.idProducto + "})")
                                               .OnCreate()
                                               .Set("c.cantidad=" + item.cantidad)
@@ -125,6 +113,7 @@ namespace API.Controllers
                                               })
                                               .ResultsAsync;
 
+                // Si no existe, crea la relacion ClienteCompra
                 var merge_relat = await _client.Cypher.Match("(cl:Clientes {id:" + idCliente + "}), (c:Compras {idCliente:" + idCliente + ", idProducto:" + item.idProducto + "})")
                                              .Merge("(cl)-[r:ClienteCompra]->(c)")
                                              .Return(x => new
@@ -133,6 +122,7 @@ namespace API.Controllers
                                               })
                                               .ResultsAsync;
 
+                // Si no existe, crea la relacion prodCompra
                 var merge_relat2 = await _client.Cypher.Match("(p:Productos {id:" + item.idProducto + "}), (c:Compras {idCliente:" + idCliente + ", idProducto:" + item.idProducto + "})")
                                              .Merge("(p)-[r:prodCompra]->(c)")
                                              .Return(x => new

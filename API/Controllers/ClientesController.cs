@@ -41,7 +41,7 @@ namespace BDAProy2.Controllers
         /// GET de un Cliente segun su identificador
         /// </summary>
         /// <param name="id">
-        /// El identificador del cliente que se desea obtener
+        /// El identificador del Cliente que se desea obtener
         /// </param>
         /// <returns> El objeto Cliente deseado </returns>
         /// <response code="200">Retorna el Cliente deseado</response>
@@ -71,7 +71,7 @@ namespace BDAProy2.Controllers
         /// <remarks>
         /// Ejemplo de body:
         /// 
-        ///     POST api/Employee
+        ///     POST api/Cliente
         ///     {       
         ///       "id": "54"         
         ///       "first_name": "Mike",
@@ -102,6 +102,17 @@ namespace BDAProy2.Controllers
         /// <param name="cliente">
         /// Objeto con los nuevos atributos para el Cliente
         /// </param>
+        /// <remarks>
+        /// Ejemplo de body:
+        /// 
+        ///     PUT api/Cliente
+        ///     {       
+        ///       "id": "54"         
+        ///       "first_name": "Taylor",
+        ///       "last_name": "Andrew"
+        ///     }
+        /// </remarks>
+        
         /// <response code="200">Se actualiza el nuevo Cliente</response>
         /// <response code="500">El identificador ingresado ya pertenece a
         /// otro Cliente </response>
@@ -134,12 +145,95 @@ namespace BDAProy2.Controllers
                                 .DetachDelete("x")
                                 .ExecuteWithoutResultsAsync();
 
+            // Eliminar compras asociadas al cliente
             await _client.Cypher.Match("(x:Compras)")
                                 .Where((Compras x) => x.idCliente == id)
                                 .DetachDelete("x")
                                 .ExecuteWithoutResultsAsync();
         
             return Ok();
+        }
+
+        /// <summary>
+        /// Top 5 de Clientes con mas Compras
+        /// </summary>
+        /// <remarks>
+        /// Ejemplo de respuesta:
+        /// 
+        ///     GET api/Clientes>/Top5
+        ///     [
+        ///      {       
+        ///       "idCliente": "1",  
+        ///       "nombreCliente": "Ollie Dourin",     
+        ///       "cantidad": 67
+        ///      },
+        ///      {       
+        ///       "idCliente": "7",  
+        ///       "nombreCliente": "Ariana Grande",     
+        ///       "cantidad": 59
+        ///      }
+        ///     ]
+        /// </remarks>
+        /// <returns></returns>
+        [HttpGet("Top5")]
+        public async Task<IActionResult> GetTopFiveClientes()
+        {
+            var clientes = await _client.Cypher.Match("(x:Compras), (c:Clientes)")
+                                              .Where((Compras x, Clientes c) => x.idCliente == c.id)
+                                              .Return(x => new
+                                              {
+                                                  idCliente = Return.As<string>("x.idCliente"),
+                                                  nombreCliente = Return.As<string>("COALESCE(c.first_name,\"\") + \" \" + COALESCE(c.last_name,\"\")"),
+                                                  cantidad = Return.As<int>("SUM(x.cantidad)")
+                                              })
+                                              .OrderByDescending("cantidad")
+                                              .Limit(5).ResultsAsync;
+
+            return Ok(clientes);
+        }
+
+        /// <summary>
+        /// Busqueda de un Cliente para mostrar sus Compras
+        /// </summary>
+        /// <param name="nombre">
+        /// Nombre del Cliente a ser buscado
+        /// </param>
+        /// <param name="apellido">
+        /// Apellido del Cliente a ser buscado
+        /// </param>
+        /// <remarks>
+        /// Ejemplo de respuesta:
+        /// 
+        ///     GET api/Cliente/Busqueda/{nombre}/{apellido}
+        ///     [
+        ///      {       
+        ///       "nombreProducto": "Piano",        
+        ///       "marcaProducto": "Yamaha",
+        ///       "cantidadProducto": 1
+        ///      },
+        ///      {       
+        ///       "nombreProducto": "Wii U",        
+        ///       "marcaProducto": "Nintendo",
+        ///       "cantidadProducto": 2
+        ///      }
+        ///     ]
+        /// </remarks>
+        /// <returns></returns>
+        [HttpGet("Busqueda/{nombre}/{apellido}")]
+        public async Task<IActionResult> GetProdsByClient(string nombre, string apellido)
+        {
+            var clientes = await _client.Cypher.Match("(c:Clientes), (p:Productos), (x:Compras)")
+                                               .Where((Clientes c, Productos p, Compras x) => 
+                                               (c.first_name == nombre & c.last_name == apellido &
+                                               c.id == x.idCliente & p.id == x.idProducto))
+                                               .Return(x => new
+                                              {
+                                                nombreProducto = Return.As<string>("p.nombre"),
+                                                marcaProducto = Return.As<string>("p.marca"),
+                                                cantidadProducto = Return.As<int>("x.cantidad"),
+                                              })
+                                              .ResultsAsync;
+            return Ok(clientes);
         }
 
         [HttpGet("clienteCompraComun/{nombreCliente}/{apellidoCliente}")]

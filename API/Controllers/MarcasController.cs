@@ -69,7 +69,28 @@ namespace BDAProy2.Controllers
             return Ok();
         }
 
-        [HttpGet("topFiveMarcas")]
+        /// <summary>
+        /// Top 5 de Marcas mas vendidas
+        /// </summary>
+        /// <remarks>
+        /// Ejemplo de respuesta:
+        /// 
+        ///     GET api/Marcas/Top5
+        ///     [
+        ///      {       
+        ///       "nombreMarca": "Nintendo",  
+        ///       "paisMarca": "Japon",     
+        ///       "cantidad": 947
+        ///      },
+        ///      {       
+        ///       "nombreMarca": "Yamaha",  
+        ///       "paisMarca": "Japon",     
+        ///       "cantidad": 633
+        ///      }
+        ///     ]
+        /// </remarks>
+        /// <returns></returns>
+        [HttpGet("Top5")]
         public async Task<IActionResult> GetTopFiveMarcas()
         {
             var compras = await _client.Cypher.Match("(m:Marcas)<-[:esMarca]-(p:Productos)-[:prodCompra]->(c:Compras)")
@@ -83,7 +104,6 @@ namespace BDAProy2.Controllers
                                               })
                                               .OrderByDescending("cantidad")
                                               .Limit(5).ResultsAsync;
-
 
             return Ok(compras);
         }
