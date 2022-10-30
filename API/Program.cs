@@ -25,7 +25,7 @@ builder.Services.AddCors(options =>
                       });
 });
 
-var client = new BoltGraphClient(new Uri("bolt://localhost:7687"), "neo4j", "1234");
+var client = new BoltGraphClient(new Uri("bolt://localhost:7687"), "neo4j", "admin");
 await client.ConnectAsync();
 builder.Services.AddSingleton<IGraphClient>(client);
 
