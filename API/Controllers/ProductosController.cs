@@ -189,21 +189,5 @@ namespace BDAProy2.Controllers
                                               
             return Ok(compras);
         }
-
-        [HttpGet("clienteProductoComun/{nombreProducto}")]
-        public async Task<IActionResult> ClientCommonProd(string nombreProducto)
-        {
-            var clientes = await _client.Cypher.Match("(c:Clientes), (p:Productos), (x:Compras)")
-                                               .Where((Clientes c, Productos p, Compras x) => 
-                                               (p.id == x.idProducto & c.id == x.idCliente &
-                                               nombreProducto == p.nombre))
-                                               .Return(x => new
-                                              {
-                                                nombreCliente = Return.As<string>("c.first_name"),
-                                                apellidoCliente = Return.As<string>("c.last_name")
-                                              })
-                                              .ResultsAsync;
-            return Ok(clientes);
-        }
     }
 }

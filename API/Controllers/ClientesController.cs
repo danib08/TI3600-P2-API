@@ -71,7 +71,7 @@ namespace BDAProy2.Controllers
         /// <remarks>
         /// Ejemplo de body:
         /// 
-        ///     POST api/Cliente
+        ///     POST api/Clientes
         ///     {       
         ///       "id": "54"         
         ///       "first_name": "Mike",
@@ -105,7 +105,7 @@ namespace BDAProy2.Controllers
         /// <remarks>
         /// Ejemplo de body:
         /// 
-        ///     PUT api/Cliente
+        ///     PUT api/Clientes
         ///     {       
         ///       "id": "54"         
         ///       "first_name": "Taylor",
@@ -160,7 +160,7 @@ namespace BDAProy2.Controllers
         /// <remarks>
         /// Ejemplo de respuesta:
         /// 
-        ///     GET api/Clientes>/Top5
+        ///     GET api/Clientes/Top5
         ///     [
         ///      {       
         ///       "idCliente": "1",  
@@ -204,7 +204,7 @@ namespace BDAProy2.Controllers
         /// <remarks>
         /// Ejemplo de respuesta:
         /// 
-        ///     GET api/Cliente/Busqueda/{nombre}/{apellido}
+        ///     GET api/Clientes/Busqueda/{nombre}/{apellido}
         ///     [
         ///      {       
         ///       "nombreProducto": "Piano",        
@@ -236,7 +236,34 @@ namespace BDAProy2.Controllers
             return Ok(clientes);
         }
 
-        [HttpGet("clienteCompraComun/{nombreCliente}/{apellidoCliente}")]
+        /// <summary>
+        /// Clientes Compras en comun
+        /// </summary>
+        /// <param name="nombreCliente">
+        /// Nombre del Cliente deseado
+        /// </param>
+        /// <param name="apellidoCliente">
+        /// Apellido del Cliente deseado
+        /// </param>
+        /// <remarks>
+        /// Ejemplo de respuesta:
+        /// 
+        ///     GET api/Clientes/CompraComun/{nombre}/{apellido}
+        ///     [
+        ///      {       
+        ///       "nombreCliente": "Ollie",        
+        ///       "apellidoCliente": "Dourin",
+        ///       "listaProductos": ["Piano", "Wii U"]
+        ///      },
+        ///      {       
+        ///       "nombreCliente": "Ariana",        
+        ///       "apellidoCliente": "Grande",
+        ///       "listaProductos": ["Piano", "Wii U"]
+        ///      }
+        ///     ]
+        /// </remarks>
+        /// <returns></returns>
+        [HttpGet("CompraComun/{nombreCliente}/{apellidoCliente}")]
         public  async Task<IActionResult> ClientCommonBuy(string nombreCliente, string apellidoCliente)
         {
             var clientes = await _client.Cypher.Match("(c:Clientes)-[:clienteCompra]->(x:Compras)<-[:prodCompra]-(p:Productos)-[:prodCompra]->(co:Compras)<-[:clienteCompra]-(a:Clientes)")
@@ -281,5 +308,44 @@ namespace BDAProy2.Controllers
 
             return Ok(json);
         }
+
+        /// <summary>
+        /// Clientes y Producto comun
+        /// </summary>
+        /// <param name="nombreProducto">
+        /// Nombre del Producto deseado
+        /// </param>
+        /// <remarks>
+        /// Ejemplo de respuesta:
+        /// 
+        ///     GET api/Clientes/ProductoComun/{nombreProducto}
+        ///     [
+        ///      {       
+        ///       "nombreCliente": "Ollie",        
+        ///       "apellidoCliente": "Dourin"
+        ///      },
+        ///      {       
+        ///       "nombreCliente": "Ariana",        
+        ///       "apellidoCliente": "Grande"
+        ///      }
+        ///     ]
+        /// </remarks>
+        /// <returns></returns>
+        [HttpGet("ProductoComun/{nombreProducto}")]
+        public async Task<IActionResult> ClientCommonProd(string nombreProducto)
+        {
+            var clientes = await _client.Cypher.Match("(c:Clientes), (p:Productos), (x:Compras)")
+                                               .Where((Clientes c, Productos p, Compras x) => 
+                                               (p.id == x.idProducto & c.id == x.idCliente &
+                                               nombreProducto == p.nombre))
+                                               .Return(x => new
+                                              {
+                                                nombreCliente = Return.As<string>("c.first_name"),
+                                                apellidoCliente = Return.As<string>("c.last_name")
+                                              })
+                                              .ResultsAsync;
+            return Ok(clientes);
+        }
+
     }
 }
