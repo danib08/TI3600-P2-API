@@ -107,6 +107,5 @@ namespace BDAProy2.Controllers
 
             return Ok(compras);
         }
-
     }
 }

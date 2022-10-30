@@ -3,7 +3,6 @@ using Microsoft.AspNetCore.Mvc;
 using Neo4jClient;
 using Neo4jClient.Cypher;
 
-
 namespace BDAProy2.Controllers
 {
     /// <summary>

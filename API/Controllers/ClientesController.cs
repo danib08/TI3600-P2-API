@@ -346,6 +346,5 @@ namespace BDAProy2.Controllers
                                               .ResultsAsync;
             return Ok(clientes);
         }
-
     }
 }
