@@ -18,11 +18,7 @@ builder.Services.AddSwaggerGen(options => {
 
 builder.Services.AddCors(options =>
 {
-    options.AddPolicy(name: "myCors",
-                      policy =>
-                      {
-                          policy.AllowAnyOrigin().AllowAnyHeader().AllowAnyMethod();
-                      });
+    options.AddPolicy("AllowOrigin", options => options.AllowAnyOrigin().AllowAnyMethod().AllowAnyHeader());
 });
 
 var client = new BoltGraphClient(new Uri("bolt://localhost:7687"), "neo4j", "admin");
@@ -30,6 +26,8 @@ await client.ConnectAsync();
 builder.Services.AddSingleton<IGraphClient>(client);
 
 var app = builder.Build();
+
+app.UseCors(options => options.AllowAnyOrigin().AllowAnyMethod().AllowAnyHeader());
 
 // Configure the HTTP request pipeline.
 if (app.Environment.IsDevelopment())

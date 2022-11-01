@@ -115,7 +115,7 @@ namespace API.Controllers
 
                 // Si no existe, crea la relacion ClienteCompra
                 var merge_relat = await _client.Cypher.Match("(cl:Clientes {id:" + idCliente + "}), (c:Compras {idCliente:" + idCliente + ", idProducto:" + item.idProducto + "})")
-                                             .Merge("(cl)-[r:ClienteCompra]->(c)")
+                                             .Merge("(cl)-[r:clienteCompra]->(c)")
                                              .Return(x => new
                                               {
                                                   idProducto = Return.As<int>("c.idProducto")
